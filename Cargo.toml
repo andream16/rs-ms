@@ -1,0 +1,6 @@
+[package]
+name = "rs-ms"
+version = "0.1.0"
+authors = ["andream16 <andrea.medda.uni@gmail.com>"]
+
+[dependencies]
