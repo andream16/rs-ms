@@ -7,11 +7,16 @@ extern crate log;
 extern crate env_logger;
 
 #[macro_use]
+extern crate serde_derive;
+
+extern crate serde;
+
+#[macro_use]
 extern crate serde_json;
 
-use std::collections::HashMap;
 use std::error::Error;
 use std::io;
+use std::str;
 
 use hyper::server::{Request, Response, Service};
 use hyper::{Chunk, StatusCode};
@@ -23,30 +28,30 @@ use futures::future::{Future, FutureResult};
 
 struct MicroService;
 
+#[derive(Deserialize)]
 struct NewMessage {
-    username: String,
     message: String,
+    username: String,
 }
 
-fn parse_form(form_chunk: Chunk) -> FutureResult<NewMessage, hyper::Error> {
+fn parse_form(chunk: Chunk) -> FutureResult<NewMessage, hyper::Error> {
 
-    let mut form = url::form_urlencoded::parse(form_chunk.as_ref())
-        .into_owned()
-        .collect::<HashMap<String, String>>();
+    let s = str::from_utf8(&chunk).unwrap();
 
-    if let Some(message) = form.remove("message") {
-        let username = form.remove("username").unwrap_or(String::from("anonymous"));
-        futures::future::ok(NewMessage {
-            username,
-            message,
-        })
-    } else {
+    println!("{}", s);
 
-        futures::future::err(hyper::Error::from(io::Error::new(
+    let msg : NewMessage = serde_json::from_str(s).unwrap();
+
+    futures::future::ok(msg)
+
+    /*match serde_json::from_str(s) {
+        Ok(m) => return futures::future::ok(m as NewMessage),
+        Err(e) => return futures::future::err(hyper::Error::from(io::Error::new(
             io::ErrorKind::InvalidInput,
-            "Missing field message",
+            "Missing field 'message",
         )))
-    }
+    };*/
+
 }
 
 fn make_post_response(result: Result<i64, hyper::Error>) -> FutureResult<hyper::Response, hyper::Error> {
