@@ -36,21 +36,35 @@ struct NewMessage {
 
 fn parse_form(chunk: Chunk) -> FutureResult<NewMessage, hyper::Error> {
 
-    let s = str::from_utf8(&chunk).unwrap();
+    let s = str::from_utf8(&chunk);
 
-    println!("{}", s);
+    if let Err(_) = s {
 
-    let msg : NewMessage = serde_json::from_str(s).unwrap();
-
-    futures::future::ok(msg)
-
-    /*match serde_json::from_str(s) {
-        Ok(m) => return futures::future::ok(m as NewMessage),
-        Err(e) => return futures::future::err(hyper::Error::from(io::Error::new(
+        futures::future::err(hyper::Error::from(io::Error::new(
             io::ErrorKind::InvalidInput,
-            "Missing field 'message",
+            "Bad body",
         )))
-    };*/
+
+    } else {
+
+        let j = serde_json::from_str(s.unwrap());
+
+        if let Err(_) = j {
+
+            futures::future::err(hyper::Error::from(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Missing one or more required fields",
+            )))
+
+        } else {
+
+            let res : NewMessage = j.unwrap();
+
+            futures::future::ok(res)
+
+        }
+
+    }
 
 }
 
@@ -61,8 +75,8 @@ fn make_post_response(result: Result<i64, hyper::Error>) -> FutureResult<hyper::
             let response = Response::new()
                 .with_header(ContentLength(payload.len() as u64))
                 .with_header(ContentType::json())
-                .with_body(payload);
-            debug!("{:?}", response);
+                .with_status(StatusCode::Created)
+            ;
             futures::future::ok(response)
         }
         Err(error) => make_error_response(error.description()),
@@ -93,7 +107,8 @@ impl Service for MicroService {
     fn call(&self, request: Request) -> Self::Future {
         match (request.method(), request.path()) {
             (&Post, "/") => {
-                let future = request
+                let future =
+                    request
                     .body()
                     .concat2()
                     .and_then(parse_form)
