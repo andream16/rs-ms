@@ -30,20 +30,33 @@ struct MicroService;
 
 #[derive(Deserialize)]
 struct NewMessage {
-    message: String,
-    username: String,
+    #[serde(rename="message")]
+    _message: String,
+    #[serde(rename="username")]
+    _username: String,
 }
 
-fn parse_form(chunk: Chunk) -> FutureResult<NewMessage, hyper::Error> {
+fn make_error_result<T>(error_kind: io::ErrorKind, error_message: &str) -> FutureResult<T, hyper::Error> {
+    futures::future::err(
+        hyper::Error::from(
+            io::Error::new(
+                error_kind,
+                error_message,
+            )
+        )
+    )
+}
+
+fn parse_request(chunk: Chunk) -> FutureResult<NewMessage, hyper::Error> {
 
     let s = str::from_utf8(&chunk);
 
     if let Err(_) = s {
 
-        futures::future::err(hyper::Error::from(io::Error::new(
+        make_error_result(
             io::ErrorKind::InvalidInput,
             "Bad body",
-        )))
+        )
 
     } else {
 
@@ -51,10 +64,10 @@ fn parse_form(chunk: Chunk) -> FutureResult<NewMessage, hyper::Error> {
 
         if let Err(_) = j {
 
-            futures::future::err(hyper::Error::from(io::Error::new(
+            make_error_result(
                 io::ErrorKind::InvalidInput,
                 "Missing one or more required fields",
-            )))
+            )
 
         } else {
 
@@ -68,12 +81,10 @@ fn parse_form(chunk: Chunk) -> FutureResult<NewMessage, hyper::Error> {
 
 }
 
-fn make_post_response(result: Result<i64, hyper::Error>) -> FutureResult<hyper::Response, hyper::Error> {
+fn new_response<T>(result: Result<T, hyper::Error>) -> FutureResult<hyper::Response, hyper::Error> {
     match result {
-        Ok(timestamp) => {
-            let payload = json!({"timestamp": timestamp}).to_string();
+        Ok(_r) => {
             let response = Response::new()
-                .with_header(ContentLength(payload.len() as u64))
                 .with_header(ContentType::json())
                 .with_status(StatusCode::Created)
             ;
@@ -94,8 +105,8 @@ fn make_error_response(error_message: &str) -> FutureResult<hyper::Response, hyp
     futures::future::ok(response)
 }
 
-fn write_to_db(entry: NewMessage) -> FutureResult<i64, hyper::Error> {
-    futures::future::ok(0)
+fn write_to_db(entry: NewMessage) -> FutureResult<NewMessage, hyper::Error> {
+    futures::future::ok(entry)
 }
 
 impl Service for MicroService {
@@ -111,9 +122,9 @@ impl Service for MicroService {
                     request
                     .body()
                     .concat2()
-                    .and_then(parse_form)
+                    .and_then(parse_request)
                     .and_then(write_to_db)
-                    .then(make_post_response);
+                    .then(new_response);
                 Box::new(future)
             }
             (&Get, "/") => {
