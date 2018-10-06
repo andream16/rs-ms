@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["andream16 <andrea.medda.uni@gmail.com>"]
 
 [dependencies]
-env_logger = "0.5.3"
+config = "0.9"
 futures = "0.1.17"
 hyper = "0.11.13"
 slog = "2.4.1"
