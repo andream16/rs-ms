@@ -1,5 +1,6 @@
 extern crate config;
 
+/// The `Environment` type contains information used to startup the server
 #[derive(Deserialize)]
 pub struct Environment {
     #[serde(rename="hostname")]
@@ -8,6 +9,10 @@ pub struct Environment {
     pub port: String,
 }
 
+/// Returns a new Environment
+///
+/// # Safe
+///
 pub fn get() -> Result<Environment, config::ConfigError> {
 
     let file_name = "default-env";
