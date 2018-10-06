@@ -10,10 +10,13 @@ pub struct Environment {
 
 pub fn get() -> Result<Environment, config::ConfigError> {
 
+    let file_name = "default-env";
+
     let mut settings = config::Config::default();
 
-    settings
-        .merge(config::File::with_name("default-env")).unwrap();
+    if let Err(e) = settings.merge(config::File::with_name(file_name)) {
+        return Err(e)
+    }
 
     return settings.try_into::<Environment>();
 

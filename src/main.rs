@@ -8,7 +8,6 @@ extern crate slog_json;
 
 use slog::Drain;
 use std::sync::Mutex;
-use std::process;
 
 #[macro_use]
 extern crate serde_derive;
@@ -26,6 +25,9 @@ fn main() {
         o!("version" => env!("CARGO_PKG_VERSION"))
     );
 
+    info!(root, "logger successfully initialized");
+    info!(root, "initializing environment");
+
     let environment = match env::env::get() {
         Ok(res) => res,
         Err(e) => {
@@ -36,14 +38,17 @@ fn main() {
 
     let listen_to = format!("{}:{}", environment.hostname, environment.port);
 
-    info!(root, "add: {}", listen_to);
+    info!(root, "environment successfully initialized");
+    info!(root, "initializing routes");
 
     let address = listen_to.parse().unwrap();
     let server = hyper::server::Http::new()
         .bind(&address, || Ok(api::MicroService {}))
         .unwrap();
 
-    info!(root, "service running on: {}", listen_to);
+    info!(root, "routes successfully initialized");
+    info!(root, "server running at: {}", listen_to);
 
     server.run().unwrap();
+
 }
