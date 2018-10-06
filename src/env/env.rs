@@ -9,10 +9,12 @@ pub struct Environment {
     pub port: String,
 }
 
-/// Returns a new Environment
+/// Returns a new `Environment`
 ///
 /// # Safe
 ///
+/// Initializes a new `Environment` from environment variables.
+/// If no environment variables are found, it initializes it from `default-config.yaml`.
 pub fn get() -> Result<Environment, config::ConfigError> {
 
     let file_name = "default-env";
