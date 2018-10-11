@@ -16,7 +16,7 @@ extern crate serde_derive;
 extern crate serde_json;
 
 mod api;
-mod env;
+mod configuration;
 
 fn main() {
 
@@ -28,10 +28,10 @@ fn main() {
     info!(root, "logger successfully initialized");
     info!(root, "initializing environment");
 
-    let environment = match env::env::get() {
+    let environment = match configuration::configuration::get() {
         Ok(res) => res,
         Err(e) => {
-            error!(root, "unable to load environment: {}", e);
+            error!(root, "unable to load environment: {:?}", e);
             std::process::exit(1);
         },
     };
